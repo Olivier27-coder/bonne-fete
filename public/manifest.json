@@ -1,0 +1,33 @@
+{
+  "name": "Bonne Année - Meilleurs Vœux",
+  "short_name": "Vœux 2025",
+  "description": "Application élégante pour souhaiter la bonne année et partager vos meilleurs vœux",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["social", "lifestyle"],
+  "lang": "fr-FR"
+}
