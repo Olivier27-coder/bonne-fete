@@ -40,19 +40,6 @@ export default function Home() {
     }
   }, []);
 
-  // Essayer de jouer le son christmas au démarrage
-  useEffect(() => {
-    if (mounted && soundEnabled) {
-      // Délai pour permettre au composant SoundManager de s'initialiser
-      const timer = setTimeout(() => {
-        if (typeof window !== 'undefined' && (window as any).playChristmasSound) {
-          (window as any).playChristmasSound();
-        }
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [mounted, soundEnabled]);
-
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);

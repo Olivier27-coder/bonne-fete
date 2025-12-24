@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
 interface SoundManagerProps {
@@ -11,16 +11,18 @@ interface SoundManagerProps {
 export default function SoundManager({ soundEnabled, onToggle }: SoundManagerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const christmasAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [hasPlayedChristmas, setHasPlayedChristmas] = useState(false);
+  const hasPlayedChristmasRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !hasInitializedRef.current) {
       audioRef.current = new Audio('/sounds/celebrate.wav');
       audioRef.current.volume = 0.3;
       
       christmasAudioRef.current = new Audio('/sounds/christmas.wav');
       christmasAudioRef.current.volume = 0.4;
-      // Pas de loop - le son ne joue qu'une seule fois
+      christmasAudioRef.current.loop = false; // S'assurer que le son ne boucle pas
+      hasInitializedRef.current = true;
     }
   }, []);
 
@@ -34,14 +36,14 @@ export default function SoundManager({ soundEnabled, onToggle }: SoundManagerPro
   }, [soundEnabled]);
 
   const playChristmasSound = useCallback(() => {
-    if (christmasAudioRef.current && soundEnabled && !hasPlayedChristmas) {
+    if (christmasAudioRef.current && soundEnabled && !hasPlayedChristmasRef.current) {
       christmasAudioRef.current.currentTime = 0;
       christmasAudioRef.current.play().catch(() => {
         // Ignore les erreurs de lecture automatique
       });
-      setHasPlayedChristmas(true);
+      hasPlayedChristmasRef.current = true;
     }
-  }, [soundEnabled, hasPlayedChristmas]);
+  }, [soundEnabled]);
 
   const stopChristmasSound = useCallback(() => {
     if (christmasAudioRef.current) {
@@ -68,14 +70,27 @@ export default function SoundManager({ soundEnabled, onToggle }: SoundManagerPro
 
   // Jouer le son christmas une seule fois au démarrage si le son est activé
   useEffect(() => {
-    if (soundEnabled && christmasAudioRef.current && !hasPlayedChristmas) {
+    let timer: NodeJS.Timeout | null = null;
+    
+    if (soundEnabled && christmasAudioRef.current && !hasPlayedChristmasRef.current && hasInitializedRef.current) {
       // Petit délai pour éviter les problèmes de lecture automatique
-      const timer = setTimeout(() => {
-        playChristmasSound();
+      timer = setTimeout(() => {
+        if (christmasAudioRef.current && !hasPlayedChristmasRef.current) {
+          christmasAudioRef.current.currentTime = 0;
+          christmasAudioRef.current.play().catch(() => {
+            // Ignore les erreurs de lecture automatique
+          });
+          hasPlayedChristmasRef.current = true;
+        }
       }, 500);
-      return () => clearTimeout(timer);
     }
-  }, [soundEnabled, hasPlayedChristmas, playChristmasSound]);
+    
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [soundEnabled]);
 
   return (
     <button
@@ -84,4 +99,11 @@ export default function SoundManager({ soundEnabled, onToggle }: SoundManagerPro
       aria-label={soundEnabled ? 'Désactiver le son' : 'Activer le son'}
     >
       {soundEnabled ? (
-        <Volume2 className="w-5 
+        <Volume2 className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+      ) : (
+        <VolumeX className="w-5 h-5 text-slate-500 dark:text-slate-500" />
+      )}
+    </button>
+  );
+}
+
