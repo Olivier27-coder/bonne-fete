@@ -18,10 +18,16 @@ export default function SoundManager({ soundEnabled, onToggle }: SoundManagerPro
     if (typeof window !== 'undefined' && !hasInitializedRef.current) {
       audioRef.current = new Audio('/sounds/celebrate.wav');
       audioRef.current.volume = 0.3;
+      audioRef.current.preload = 'auto';
       
       christmasAudioRef.current = new Audio('/sounds/christmas.wav');
       christmasAudioRef.current.volume = 0.4;
       christmasAudioRef.current.loop = false; // S'assurer que le son ne boucle pas
+      christmasAudioRef.current.preload = 'auto';
+      
+      // Charger le son pour éviter les problèmes de timing
+      christmasAudioRef.current.load();
+      
       hasInitializedRef.current = true;
     }
   }, []);
@@ -73,22 +79,64 @@ export default function SoundManager({ soundEnabled, onToggle }: SoundManagerPro
     let timer: NodeJS.Timeout | null = null;
     
     if (soundEnabled && christmasAudioRef.current && !hasPlayedChristmasRef.current && hasInitializedRef.current) {
-      // Petit délai pour éviter les problèmes de lecture automatique
+      // Délai pour permettre l'initialisation complète
       timer = setTimeout(() => {
-        if (christmasAudioRef.current && !hasPlayedChristmasRef.current) {
+        if (christmasAudioRef.current && !hasPlayedChristmasRef.current && soundEnabled) {
           christmasAudioRef.current.currentTime = 0;
-          christmasAudioRef.current.play().catch(() => {
-            // Ignore les erreurs de lecture automatique
-          });
-          hasPlayedChristmasRef.current = true;
+          const playPromise = christmasAudioRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                // Son joué avec succès
+                hasPlayedChristmasRef.current = true;
+              })
+              .catch((error) => {
+                // Erreur de lecture automatique (probablement bloquée par le navigateur)
+                console.log('Lecture automatique bloquée, le son se jouera après la première interaction');
+                // Réinitialiser pour permettre la lecture après interaction
+                hasPlayedChristmasRef.current = false;
+              });
+          }
         }
-      }, 500);
+      }, 1000);
     }
     
     return () => {
       if (timer) {
         clearTimeout(timer);
       }
+    };
+  }, [soundEnabled]);
+
+  // Essayer de jouer le son après la première interaction utilisateur si la lecture automatique a échoué
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (soundEnabled && christmasAudioRef.current && !hasPlayedChristmasRef.current && hasInitializedRef.current) {
+        christmasAudioRef.current.currentTime = 0;
+        christmasAudioRef.current.play()
+          .then(() => {
+            hasPlayedChristmasRef.current = true;
+          })
+          .catch(() => {
+            // Ignore les erreurs
+          });
+      }
+      // Retirer les listeners après la première interaction
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+
+    // Ajouter les listeners pour la première interaction
+    document.addEventListener('click', handleFirstInteraction, { once: true });
+    document.addEventListener('touchstart', handleFirstInteraction, { once: true });
+    document.addEventListener('keydown', handleFirstInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
     };
   }, [soundEnabled]);
 
